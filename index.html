@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>臺大醫院網路工程施工通知書 (多頁批次列印版)</title>
+<title>臺大醫院網路工程施工通知書 (全欄位可自訂版)</title>
 <style>
     /* 1. 標準 Word A4 邊界 (上2.54cm, 下2.54cm, 左3.18cm, 右3.18cm) */
     @page {
@@ -43,12 +43,13 @@
     .btn-group {
         display: flex;
         gap: 10px;
+        flex-wrap: wrap;
     }
     .btn {
         background-color: #1a56db;
         color: white;
         border: none;
-        padding: 10px 20px;
+        padding: 10px 16px;
         font-size: 14px;
         font-weight: bold;
         border-radius: 6px;
@@ -63,6 +64,12 @@
     }
     .btn-add:hover {
         background-color: #046c4e;
+    }
+    .btn-edit-mode {
+        background-color: #d97706;
+    }
+    .btn-edit-mode:hover {
+        background-color: #b45309;
     }
     .btn-del {
         background-color: #e53e3e;
@@ -85,7 +92,7 @@
         box-shadow: 0 0 10px rgba(0,0,0,0.1);
         position: relative;
         font-family: "DFKai-SB", "BiauKai", "標楷體", "KaiTi", "Times New Roman", serif;
-        page-break-after: always; /* 確保列印時每一張通知單獨立占據一頁 A4 */
+        page-break-after: always;
     }
 
     /* Word 標題 1 (小二 / 18pt 粗體) */
@@ -146,7 +153,7 @@
         font-size: 11pt;
     }
 
-    /* 可編輯輸入框樣式 */
+    /* 一般可編輯輸入框樣式 (填單用) */
     .editable-input {
         font-family: "DFKai-SB", "BiauKai", "標楷體", "KaiTi", "Times New Roman", serif;
         font-size: 11pt;
@@ -161,6 +168,15 @@
         background-color: #ffffff;
         border-style: solid;
         box-shadow: 0 0 0 2px rgba(229, 62, 62, 0.4);
+    }
+
+    /* 固定內容解鎖後的編輯樣式 */
+    [contenteditable="true"].master-field {
+        background-color: #fffbeb !important;
+        outline: 2px dashed #d97706 !important;
+        border-radius: 2px;
+        padding: 1px 3px;
+        display: inline-block;
     }
 
     /* 備註欄內部排版 */
@@ -228,7 +244,7 @@
             margin: 0 !important;
             box-shadow: none !important;
             border: none !important;
-            page-break-after: always !important; /* 每張通知書強制獨立成一頁 */
+            page-break-after: always !important;
             page-break-inside: avoid !important;
         }
         
@@ -242,8 +258,12 @@
             -moz-appearance: none !important;
             box-shadow: none !important;
         }
+
+        [contenteditable="true"].master-field {
+            background-color: transparent !important;
+            outline: none !important;
+        }
         
-        /* 列印時強制隱藏輸入框的提示文字 */
         .editable-input::placeholder {
             color: transparent !important;
         }
@@ -269,6 +289,7 @@
     <h2>臺大醫院網路工程施工通知書 - 批次填寫管理面板</h2>
     <div class="btn-group">
         <button class="btn btn-add" onclick="addNoticeCard()">➕ 新增施工通知單</button>
+        <button id="toggle-edit-btn" class="btn btn-edit-mode" onclick="toggleMasterEdit()">⚙️ 編輯固定通用資料</button>
         <button class="btn" onclick="window.print()">🖨️ 列印全部通知單</button>
     </div>
 </div>
@@ -278,6 +299,50 @@
 
 <script>
     let pageCount = 0;
+    let isMasterEditMode = false;
+
+    // 預設的固定範本資料（全欄位可自訂）
+    let defaultTemplateData = {
+        dept: "資訊室",
+        projName: "網路線佈線汰換暨光纖線路及網路設備擴充案",
+        subProjName: "網路線佈線汰換工程",
+        vendorName: "中孚科技股份有限公司",
+        vendorBoss: "張志明",
+        vendorPhone: "（02）27908850",
+        vendorAddr: "台北市內湖區行忠路 57 號 6 樓",
+        dir1: "李格毅", dir1Phone: "0930-986-846",
+        dir2: "林育瑋", dir2Phone: "0930-330-268",
+        dir3: "蔡崇欽", dir3Phone: "0930-699-007",
+        contactPerson: "黃翊宸",
+        contactPhone: "分機：261108<br>0972-656-266",
+        matLoc: "東址南北棟 14 樓管道間",
+        trashLoc: "當天處理。",
+        safetyInfo: "使用三角錐、警戒線區隔、身穿安全帽、反光背心",
+        
+        // 新增：備註欄固定條文
+        noteLine1: "1. 施工前將與該樓層單位人員確認可否施作",
+        noteLine2Label: "2. 施工地點：",
+        noteLine3Label: "3. 施工時間：",
+        noteLine4Label: "4. 影響範圍：",
+        noteLine5: "5. 若遇需駐警同仁協助開門之情形，資訊室人員會前往駐警隊簽名，並協同前往開門。",
+        noteLine6: "6. 施工後會有新舊網點線路裸露狀況，於該區域網點切換上線當日固定，網點切換上線將另行通知",
+
+        // 新增：注意事項區塊
+        notesTitle: "※注意事項：",
+        noticeRule1: `1、 本表一式 <span class="underline">3</span> 份，經本院監工人員核章後轉交
+            <span class="square-check" onclick="toggleSquare(this)">□</span>總務室庶務組、
+            <span class="square-check" onclick="toggleSquare(this)">□</span>安衛室、
+            <span class="square-check" onclick="toggleSquare(this)">□</span>駐警隊、
+            <span class="square-check" onclick="toggleSquare(this)">□</span>感控中心、
+            <span class="square-check" onclick="toggleSquare(this)">□</span>工務室、
+            <span class="square-check" onclick="toggleSquare(this)">■</span>使用單位、
+            <span class="square-check" onclick="toggleSquare(this)">□</span>東址中控室、
+            <span class="square-check" onclick="toggleSquare(this)">□</span>氣體房及
+            <span class="square-check" onclick="toggleSquare(this)">□</span>承包商。`,
+        noticeRule2: "2、 承商應自行負責注意設置『工地安全衛生設施』，如有未盡完善，致發生意外事故時，承商應負全責且與本院無涉。",
+        noticeRule3: "3、 承包商應依本院所訂「臺大醫院工程承包廠商施工人員應遵守注意事項」辦理，如需帶出院外之物品，應依「本院放行證辦法」處理。",
+        noticeRule4: "4、 工地負責人必須於每日工作散工前，巡視四周安全及清潔妥當後，始可離開。如有特殊需要，人員需留守工地住宿時，應依本院規定辦理，並向管區申報流動戶口。"
+    };
 
     // 自動獲取當日民國年日期
     function getTodayDateROC() {
@@ -303,7 +368,7 @@
             <div class="doc-title">臺大醫院網路工程施工通知書</div>
             
             <div class="header-row">
-                <div class="header-left">發文單位：資訊室</div>
+                <div class="header-left">發文單位：<span class="master-field" data-key="dept">${defaultTemplateData.dept}</span></div>
                 <div class="header-right">
                     日期：<span>${todayStr}</span>填寫
                 </div>
@@ -320,12 +385,12 @@
                 </colgroup>
                 <tr>
                     <td colspan="2" class="td-label">工 程 名 稱</td>
-                    <td colspan="3">網路線佈線汰換暨光纖線路及網路設備擴充案</td>
+                    <td colspan="3"><span class="master-field" data-key="projName">${defaultTemplateData.projName}</span></td>
                 </tr>
                 <tr>
                     <td colspan="2" class="td-label">相 關 工 項</td>
                     <td colspan="3">
-                        網路線佈線汰換工程 <input type="text" class="editable-input" style="width: 60%;" placeholder="請輸入工程項目">
+                        <span class="master-field" data-key="subProjName">${defaultTemplateData.subProjName}</span> <input type="text" class="editable-input" style="width: 50%;" placeholder="請輸入工程項目">
                     </td>
                 </tr>
                 <tr>
@@ -343,56 +408,53 @@
                         廠<br>商<br>資<br>料
                     </td>
                     <td class="td-label">承 包 廠 商</td>
-                    <td colspan="3">中孚科技股份有限公司</td>
+                    <td colspan="3"><span class="master-field" data-key="vendorName">${defaultTemplateData.vendorName}</span></td>
                 </tr>
                 <tr>
                     <td class="td-label">公司負責人</td>
-                    <td>張志明</td>
+                    <td><span class="master-field" data-key="vendorBoss">${defaultTemplateData.vendorBoss}</span></td>
                     <td class="td-label">聯 絡 電 話</td>
-                    <td>（02）27908850</td>
+                    <td><span class="master-field" data-key="vendorPhone">${defaultTemplateData.vendorPhone}</span></td>
                 </tr>
                 <tr>
                     <td class="td-label">地 址</td>
-                    <td colspan="3">台北市內湖區行忠路 57 號 6 樓</td>
+                    <td colspan="3"><span class="master-field" data-key="vendorAddr">${defaultTemplateData.vendorAddr}</span></td>
                 </tr>
                 <tr>
                     <td class="td-label">工地主任</td>
-                    <td>李格毅</td>
+                    <td><span class="master-field" data-key="dir1">${defaultTemplateData.dir1}</span></td>
                     <td class="td-label">聯 絡 電 話</td>
-                    <td>0930-986-846</td>
+                    <td><span class="master-field" data-key="dir1Phone">${defaultTemplateData.dir1Phone}</span></td>
                 </tr>
                 <tr>
                     <td class="td-label">工地副主任</td>
-                    <td>林育瑋</td>
+                    <td><span class="master-field" data-key="dir2">${defaultTemplateData.dir2}</span></td>
                     <td class="td-label">聯 絡 電 話</td>
-                    <td>0930-330-268</td>
+                    <td><span class="master-field" data-key="dir2Phone">${defaultTemplateData.dir2Phone}</span></td>
                 </tr>
                 <tr>
                     <td class="td-label">工地副主任</td>
-                    <td>蔡崇欽</td>
+                    <td><span class="master-field" data-key="dir3">${defaultTemplateData.dir3}</span></td>
                     <td class="td-label">聯 絡 電 話</td>
-                    <td>0930-699-007</td>
+                    <td><span class="master-field" data-key="dir3Phone">${defaultTemplateData.dir3Phone}</span></td>
                 </tr>
                 <tr>
                     <td colspan="2" class="td-label">資訊室聯絡人</td>
-                    <td style="text-align: center;">黃翊宸</td>
+                    <td style="text-align: center;"><span class="master-field" data-key="contactPerson">${defaultTemplateData.contactPerson}</span></td>
                     <td class="td-label">聯 絡 電 話</td>
-                    <td>
-                        分機：261108<br>
-                        0972-656-266
-                    </td>
+                    <td><span class="master-field" data-key="contactPhone">${defaultTemplateData.contactPhone}</span></td>
                 </tr>
                 <tr>
                     <td colspan="2" class="td-label">建材及機具放置位置</td>
-                    <td colspan="3">東址南北棟 14 樓管道間</td>
+                    <td colspan="3"><span class="master-field" data-key="matLoc">${defaultTemplateData.matLoc}</span></td>
                 </tr>
                 <tr>
                     <td colspan="2" class="td-label">垃圾廢棄物放置位置</td>
-                    <td colspan="3">當天處理。</td>
+                    <td colspan="3"><span class="master-field" data-key="trashLoc">${defaultTemplateData.trashLoc}</span></td>
                 </tr>
                 <tr>
                     <td colspan="2" class="td-label">安全設施情形</td>
-                    <td colspan="3">使用三角錐、警戒線區隔、身穿安全帽、反光背心</td>
+                    <td colspan="3"><span class="master-field" data-key="safetyInfo">${defaultTemplateData.safetyInfo}</span></td>
                 </tr>
                 <tr>
                     <td class="vertical-first-col">
@@ -400,43 +462,83 @@
                     </td>
                     <td colspan="4" style="padding: 6px;">
                         <div class="notes-container">
-                            <div class="notes-line">1. 施工前將與該樓層單位人員確認可否施作</div>
+                            <div class="notes-line"><span class="master-field" data-key="noteLine1">${defaultTemplateData.noteLine1}</span></div>
                             <div class="notes-line">
-                                2. 施工地點：<input type="text" class="editable-input" style="width: 75%;" placeholder="請輸入地點">
+                                <span class="master-field" data-key="noteLine2Label">${defaultTemplateData.noteLine2Label}</span><input type="text" class="editable-input" style="width: 75%;" placeholder="請輸入地點">
                             </div>
                             <div class="notes-line">
-                                3. 施工時間：<input type="text" class="editable-input" style="width: 28px; text-align: center;" placeholder="月" value="06">月<input type="text" class="editable-input" style="width: 28px; text-align: center;" placeholder="日" value="26">日~<input type="text" class="editable-input" style="width: 28px; text-align: center;" placeholder="月" value="06">月<input type="text" class="editable-input" style="width: 28px; text-align: center;" placeholder="日" value="30">日(<select class="editable-input"><option value="平 / 假 日">平/假日</option><option value="平 日">平日</option><option value="假 日">假日</option></select>施作) <input type="text" class="editable-input" style="width: 50px; text-align: center;" value="09:00">-<input type="text" class="editable-input" style="width: 50px; text-align: center;" value="17:00">
+                                <span class="master-field" data-key="noteLine3Label">${defaultTemplateData.noteLine3Label}</span><input type="text" class="editable-input" style="width: 28px; text-align: center;" placeholder="月" value="06">月<input type="text" class="editable-input" style="width: 28px; text-align: center;" placeholder="日" value="26">日~<input type="text" class="editable-input" style="width: 28px; text-align: center;" placeholder="月" value="06">月<input type="text" class="editable-input" style="width: 28px; text-align: center;" placeholder="日" value="30">日(<select class="editable-input"><option value="平 / 假 日">平/假日</option><option value="平 日">平日</option><option value="假 日">假日</option></select>施作) <input type="text" class="editable-input" style="width: 50px; text-align: center;" value="09:00">-<input type="text" class="editable-input" style="width: 50px; text-align: center;" value="17:00">
                             </div>
                             <div class="notes-line">
-                                4. 影響範圍：<input type="text" class="editable-input" style="width: 75%;" placeholder="請輸入影響範圍">
+                                <span class="master-field" data-key="noteLine4Label">${defaultTemplateData.noteLine4Label}</span><input type="text" class="editable-input" style="width: 75%;" placeholder="請輸入影響範圍">
                             </div>
-                            <div class="notes-line" style="white-space: normal;">5. 若遇需駐警同仁協助開門之情形，資訊室人員會前往駐警隊簽名，並協同前往開門。</div>
-                            <div class="notes-line" style="white-space: normal;">6. 施工後會有新舊網點線路裸露狀況，於該區域網點切換上線當日固定，網點切換上線將另行通知</div>
+                            <div class="notes-line" style="white-space: normal;"><span class="master-field" data-key="noteLine5">${defaultTemplateData.noteLine5}</span></div>
+                            <div class="notes-line" style="white-space: normal;"><span class="master-field" data-key="noteLine6">${defaultTemplateData.noteLine6}</span></div>
                         </div>
                     </td>
                 </tr>
             </table>
 
-            <div class="notes-title">※注意事項：</div>
+            <div class="notes-title"><span class="master-field" data-key="notesTitle">${defaultTemplateData.notesTitle}</span></div>
             <ol class="notes-list">
-                <li>1、 本表一式 <span class="underline">3</span> 份，經本院監工人員核章後轉交
-                    <span class="square-check" onclick="toggleSquare(this)">□</span>總務室庶務組、
-                    <span class="square-check" onclick="toggleSquare(this)">□</span>安衛室、
-                    <span class="square-check" onclick="toggleSquare(this)">□</span>駐警隊、
-                    <span class="square-check" onclick="toggleSquare(this)">□</span>感控中心、
-                    <span class="square-check" onclick="toggleSquare(this)">□</span>工務室、
-                    <span class="square-check" onclick="toggleSquare(this)">■</span>使用單位、
-                    <span class="square-check" onclick="toggleSquare(this)">□</span>東址中控室、
-                    <span class="square-check" onclick="toggleSquare(this)">□</span>氣體房及
-                    <span class="square-check" onclick="toggleSquare(this)">□</span>承包商。
-                </li>
-                <li>2、 承商應自行負責注意設置『工地安全衛生設施』，如有未盡完善，致發生意外事故時，承商應負全責且與本院無涉。</li>
-                <li>3、 承包商應依本院所訂「臺大醫院工程承包廠商施工人員應遵守注意事項」辦理，如需帶出院外之物品，應依「本院放行證辦法」處理。</li>
-                <li>4、 工地負責人必須於每日工作散工前，巡視四周安全及清潔妥當後，始可離開。如有特殊需要，人員需留守工地住宿時，應依本院規定辦理，並向管區申報流動戶口。</li>
+                <li><span class="master-field" data-key="noticeRule1">${defaultTemplateData.noticeRule1}</span></li>
+                <li><span class="master-field" data-key="noticeRule2">${defaultTemplateData.noticeRule2}</span></li>
+                <li><span class="master-field" data-key="noticeRule3">${defaultTemplateData.noticeRule3}</span></li>
+                <li><span class="master-field" data-key="noticeRule4">${defaultTemplateData.noticeRule4}</span></li>
             </ol>
         `;
 
         container.appendChild(card);
+        
+        // 如果當前處於編輯模式，新產生的頁面也自動解鎖
+        if (isMasterEditMode) {
+            applyEditStateToCard(card, true);
+        }
+    }
+
+    // 切換「固定通用資料」編輯狀態
+    function toggleMasterEdit() {
+        isMasterEditMode = !isMasterEditMode;
+        const btn = document.getElementById('toggle-edit-btn');
+        const masterFields = document.querySelectorAll('.master-field');
+
+        if (isMasterEditMode) {
+            btn.innerHTML = "💾 儲存並鎖定固定資料";
+            btn.style.backgroundColor = "#dc2626"; // 變紅底提示編輯中
+            masterFields.forEach(field => {
+                field.setAttribute('contenteditable', 'true');
+            });
+            alert("全欄位編輯模式已開啟！\n您現在可以直接點擊黃框修改廠商資料、備註條文及注意事項。修改完成後請再次點擊儲存按鈕。");
+        } else {
+            btn.innerHTML = "⚙️ 編輯固定通用資料";
+            btn.style.backgroundColor = "#d97706"; // 恢復黃底
+            
+            // 儲存第一個表單的變更為未來預設範本
+            const firstPage = document.querySelector('.page');
+            if (firstPage) {
+                firstPage.querySelectorAll('.master-field').forEach(field => {
+                    const key = field.getAttribute('data-key');
+                    if (key) {
+                        defaultTemplateData[key] = field.innerHTML;
+                    }
+                });
+            }
+
+            masterFields.forEach(field => {
+                field.removeAttribute('contenteditable');
+            });
+            alert("固定資料與注意事項已儲存並鎖定！新新增的施工單將會自動套用您最新修改的格式。");
+        }
+    }
+
+    function applyEditStateToCard(card, editable) {
+        card.querySelectorAll('.master-field').forEach(field => {
+            if (editable) {
+                field.setAttribute('contenteditable', 'true');
+            } else {
+                field.removeAttribute('contenteditable');
+            }
+        });
     }
 
     // 刪除指定施工單
