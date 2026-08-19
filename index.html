@@ -163,6 +163,7 @@
         border-radius: 3px;
         outline: none;
         color: #000;
+        box-sizing: border-box;
     }
     .editable-input:focus {
         background-color: #ffffff;
@@ -396,11 +397,11 @@
                 <tr>
                     <td colspan="2" class="td-label">工項施工日期</td>
                     <td>
-                        <input type="text" class="editable-input" style="width: 95%;" value="115 年 06 月 26 日">
+                        <input type="text" class="editable-input" style="width: 100%; box-sizing: border-box;" value="115 年 06 月 26 日">
                     </td>
                     <td class="td-label">工項完工期限</td>
                     <td>
-                        <input type="text" class="editable-input" style="width: 95%;" value="116 年 12 月 31 日">
+                        <input type="text" class="editable-input" style="width: 100%; box-sizing: border-box;" value="116 年 12 月 31 日">
                     </td>
                 </tr>
                 <tr>
@@ -411,7 +412,7 @@
                     <td colspan="3"><span class="master-field" data-key="vendorName">${defaultTemplateData.vendorName}</span></td>
                 </tr>
                 <tr>
-                    <td class="td-label">公司負責人</td>
+                    <td class="td-label">公 司 負 責 人</td>
                     <td><span class="master-field" data-key="vendorBoss">${defaultTemplateData.vendorBoss}</span></td>
                     <td class="td-label">聯 絡 電 話</td>
                     <td><span class="master-field" data-key="vendorPhone">${defaultTemplateData.vendorPhone}</span></td>
@@ -421,19 +422,19 @@
                     <td colspan="3"><span class="master-field" data-key="vendorAddr">${defaultTemplateData.vendorAddr}</span></td>
                 </tr>
                 <tr>
-                    <td class="td-label">工地主任</td>
+                    <td class="td-label">工 地 主 任</td>
                     <td><span class="master-field" data-key="dir1">${defaultTemplateData.dir1}</span></td>
                     <td class="td-label">聯 絡 電 話</td>
                     <td><span class="master-field" data-key="dir1Phone">${defaultTemplateData.dir1Phone}</span></td>
                 </tr>
                 <tr>
-                    <td class="td-label">工地副主任</td>
+                    <td class="td-label">工 地 副 主 任</td>
                     <td><span class="master-field" data-key="dir2">${defaultTemplateData.dir2}</span></td>
                     <td class="td-label">聯 絡 電 話</td>
                     <td><span class="master-field" data-key="dir2Phone">${defaultTemplateData.dir2Phone}</span></td>
                 </tr>
                 <tr>
-                    <td class="td-label">工地副主任</td>
+                    <td class="td-label">工 地 副 主 任</td>
                     <td><span class="master-field" data-key="dir3">${defaultTemplateData.dir3}</span></td>
                     <td class="td-label">聯 絡 電 話</td>
                     <td><span class="master-field" data-key="dir3Phone">${defaultTemplateData.dir3Phone}</span></td>
@@ -453,7 +454,7 @@
                     <td colspan="3"><span class="master-field" data-key="trashLoc">${defaultTemplateData.trashLoc}</span></td>
                 </tr>
                 <tr>
-                    <td colspan="2" class="td-label">安全設施情形</td>
+                    <td colspan="2" class="td-label">安 全 設 施 情 形</td>
                     <td colspan="3"><span class="master-field" data-key="safetyInfo">${defaultTemplateData.safetyInfo}</span></td>
                 </tr>
                 <tr>
